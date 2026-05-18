@@ -25,7 +25,7 @@ public class LancamentoController {
     private LancamentoRepository lancamentoRepository;
 
     private void carregarDados(Model model, int page) {
-        Pageable pageable = PageRequest.of(page, 5, Sort.by("data").reversed());
+        Pageable pageable = PageRequest.of(page, 5, Sort.by("data").descending());
         Page<Lancamento> lancamentosPage = lancamentoRepository.findAll(pageable);
 
         List<Lancamento> todosLancamentos = lancamentoRepository.findAll();
