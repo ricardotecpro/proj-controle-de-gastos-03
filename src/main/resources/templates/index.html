@@ -4,38 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle de Gastos</title>
-    
-    <!-- Link para o CSS Externo -->
     <link rel="stylesheet" th:href="@{/css/style.css}">
-    
-    <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 </head>
 <body>
-
     <button id="theme-toggle">🌙</button>
-
     <div class="container">
         <h1>Meu Controle de Gastos 💰</h1>
 
         <!-- Formulário de Cadastro -->
-        <form hx-post="/lancamentos"
+        <form th:object="${novoLancamento}" hx-post="/lancamentos"
               hx-target="#lista-lancamentos"
               hx-swap="innerHTML"
               hx-on::after-request="this.reset()">
-            <input type="text" name="descricao" placeholder="Descrição" required style="flex-grow: 2;">
-            <input type="number" step="0.01" name="valor" placeholder="Valor" required style="flex-grow: 1;">
-            <select name="tipo" required style="flex-grow: 1;">
-                <option th:each="tipoOpt : ${tipos}" th:value="${tipoOpt}" th:text="${tipoOpt}"></option>
-            </select>
-            <button type="submit" class="add-btn">Adicionar</button>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; width: 100%;">
+                <div style="flex-grow: 2; display: flex; flex-direction: column;">
+                    <input type="text" th:field="*{descricao}" placeholder="Descrição" required>
+                    <span th:if="${#fields.hasErrors('descricao')}" th:errors="*{descricao}" style="color: var(--red-color); font-size: 12px;"></span>
+                </div>
+                <div style="flex-grow: 1; display: flex; flex-direction: column;">
+                    <input type="number" step="0.01" th:field="*{valor}" placeholder="Valor" required>
+                    <span th:if="${#fields.hasErrors('valor')}" th:errors="*{valor}" style="color: var(--red-color); font-size: 12px;"></span>
+                </div>
+                <div style="flex-grow: 1;">
+                    <select th:field="*{tipo}" required style="width: 100%; height: 38px;">
+                        <option th:each="tipoOpt : ${tipos}" th:value="${tipoOpt}" th:text="${tipoOpt}"></option>
+                    </select>
+                </div>
+                <button type="submit" class="add-btn" style="height: 38px;">Adicionar</button>
+            </div>
         </form>
 
         <!-- Container que o HTMX vai atualizar -->
         <div id="lista-lancamentos">
             <div th:fragment="lista-lancamentos">
-                
-                <!-- NOVO: Card de Saldo -->
+                <!-- Card de Saldo -->
                 <div class="saldo-container">
                     <div class="saldo-card" th:classappend="${saldo >= 0 ? 'positivo' : 'negativo'}">
                         <h3>Saldo Atual</h3>
@@ -68,7 +71,7 @@
                                 Alterar
                             </button>
                             <button class="action-btn delete-btn"
-                                    th:hx-delete="@{/lancamentos/{id}(id=${lancamento.id})}"
+                                    th:hx-delete="@{/lancamentos/{id}(id=${lancamento.id}, page=${currentPage})}"
                                     hx-target="#lista-lancamentos"
                                     hx-swap="innerHTML"
                                     hx-confirm="Tem certeza que deseja excluir?">
@@ -76,6 +79,18 @@
                             </button>
                         </div>
                     </div>
+                </div>
+
+                <!-- Paginação -->
+                <div class="pagination" th:if="${totalPages > 1}" style="display: flex; justify-content: center; gap: 8px; margin-top: 20px;">
+                    <button th:each="pageNumber : ${#numbers.sequence(0, totalPages - 1)}"
+                            th:text="${pageNumber + 1}"
+                            th:classappend="${pageNumber == currentPage} ? 'active' : ''"
+                            th:hx-get="@{/(page=${pageNumber})}"
+                            hx-target="#lista-lancamentos"
+                            hx-swap="innerHTML"
+                            style="padding: 5px 10px; border: 1px solid var(--border-color); border-radius: 3px; cursor: pointer; background-color: var(--card-bg-color); color: var(--text-color);">
+                    </button>
                 </div>
             </div>
         </div>
@@ -122,12 +137,10 @@
             </div>
         </th:block>
     </div>
-    
-    <!-- Script do Tema Dark -->
+
     <script>
         const themeToggle = document.getElementById('theme-toggle');
         const html = document.documentElement;
-
         themeToggle.addEventListener('click', () => {
             if (html.classList.contains('dark')) {
                 html.classList.remove('dark');
